@@ -3,12 +3,13 @@
 <link rel="stylesheet" href="index.css">
 
 <body>
-<h3>Snail Tool</h3>
-
+<script src="https://unpkg.com/@panzoom/panzoom@4.4.1/dist/panzoom.min.js"></script>
 <script src="https://www.marvinj.org/releases/marvinj-1.0.js"></script>
 
 <div id="main">
-    <canvas id="canvas" width="1280" height="720"></canvas><br/>
+    <div id="screen">
+        <canvas id="canvas" ></canvas>
+    </div>
     <div id="menu">
         <label>Scale: <input type="text" id="scale"></label>
         <div id="species-selector">
@@ -20,18 +21,31 @@
         <div id="tool-selector">
             <label>Tools: </label>
             <button id="sel">Select</button>
-            <button>Pen</button>
+            <button id="pen">Pen</button>
             <button>Erase</button>
-            <button>Delete</button>
+            <button id="delete">Delete</button>
             <button id="scl">Scale</button>
         </div>
         <div id="Options -selector">
             <label>Options: </label>
-            <button>Export</button>
+            <button>Download</button>
             <button>Upload</button>
+            <button id="panzoom-button">Enable pan</button>
         </div>
 
 
+    </div>
+    <div id="snails">
+        <table id="table">
+            <tbody>
+                <tr>
+                    <td>Position</td>
+                    <td>Species</td>
+                    <td>Length (mm)</td>
+                    <td><button>X</button></td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </div>
 

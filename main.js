@@ -1,4 +1,11 @@
 const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+canvas.width = innerWidth;
+canvas.height=innerHeight;
+const menu = document.getElementById("menu");
+const snailTable = document.getElementById("snails");
+const table = document.getElementById("table");
+
 let image = new MarvinImage();
 let mouseDown = false;
 let mouse_x = 0;
@@ -15,33 +22,77 @@ let scaledVectors = [{},{}];
 var working_image = new MarvinImage();
 let selection = new MarvinImage();
 var snailPts = [];
+let snailMeasuredPoints = [];
 
-let canvas_width = 1280;
-let canvas_height = 720;
-canvas.clientHeight = 720;
+let canvas_width = canvas.clientWidth;
+let canvas_height = canvas.clientHeight;
+// canvas.clientHeight = 720;
 
 var scaleValue = document.getElementById("scale");
-
+let selectedSnail = -1;
 
 var currentTool = select;
 let inCanvas = false;
 
-
-
+const panzoom = Panzoom(canvas, {
+    maxScale: 5,
+    exclude: [canvas]
+})
+const panzoomMenu = Panzoom(menu, {
+    maxScale: 1,
+    disableZoom: true,
+    exclude: [scaleValue]
+})
+const panzoomTable = Panzoom(snailTable, {
+    maxScale: 1,
+    disableZoom: true,
+    exclude: []
+})
+canvas.style.cursor = "crosshair";
 
 
 
 // GUHGUGHGHGHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHh
 document.getElementById("canvas").addEventListener("mouseenter", () => {inCanvas = true;});
 document.getElementById("canvas").addEventListener("mouseout", () => {inCanvas = false;});
-document.getElementById("sel").addEventListener("click", selectButton);
 
+document.getElementById("sel").addEventListener("click", selectButton);
 function selectButton(){
     currentTool = select;
 }
+
 document.getElementById("scl").addEventListener("click", scaleButton);
 function scaleButton(){
     currentTool = scale;
+}
+document.getElementById("pen").addEventListener("click", penButton);
+function penButton(){
+    panzoom.zoom(2, {animate: true})
+
+}
+document.getElementById("delete").addEventListener("click", deleteButton);
+function deleteButton(){
+    panzoom.zoom(2, {animate: true})
+
+}
+
+document.getElementById("panzoom-button").addEventListener("click", panzoomButton);
+function panzoomButton(){
+    if(panzoom.getOptions().exclude.length == 1){
+        panzoom.setOptions({
+            maxScale: 5,
+            exclude: []
+        });
+        canvas.style.cursor = "crosshair";
+    }else{
+
+        panzoom.setOptions({
+            maxScale: 5,
+            exclude: [canvas]
+        });
+        canvas.style.cursor = "gran";
+    }
+
 }
 
 image.load("DSC00050.JPG", function(){
@@ -50,6 +101,7 @@ image.load("DSC00050.JPG", function(){
     var temp = new MarvinImage();
     Marvin.scale(image, temp, canvas_width, canvas_height);
     image = temp;
+    working_image = image.clone();
     for(let i = 0; i < image.getWidth(); i++){
         for(let j = 0; j < image.getHeight(); j++){
             if(compareColor(-1,60,40, image,i,j) == -1){
@@ -64,7 +116,8 @@ image.load("DSC00050.JPG", function(){
 
 
 function select(){
-    if(isValidSelection())
+    console.log(isValidSelection());
+    if(isValidSelection()   )
         crop();
 }
 function scale(){
@@ -83,46 +136,48 @@ function scale(){
 }
 
 
-document.addEventListener("mousedown", (event) => {
+canvas.parentElement.addEventListener("mousedown", (event) => {
     mouseDown = true;
-
     let pos = getMousePos(canvas, event);
     mouse_down_x = pos.x;
     mouse_down_y = pos.y;
 });
-document.addEventListener("mouseup", (event) => {
+canvas.parentElement.addEventListener("mouseup", (event) => {
     mouseDown = false;
     let pos = getMousePos(canvas, event);
     mouse_up_x = pos.x;
     mouse_up_y = pos.y;
     if(inCanvas) currentTool();
 });
-document.addEventListener("mousemove", (event) => {
+canvas.parentElement.addEventListener("mousemove", (event) => {
     let pos = getMousePos(canvas, event)
     mouse_x = pos.x;
     mouse_y = pos.y;
     if(mouseDown){
 
-        box_width = pos.x-mouse_down_x;
-        box_height = pos.y-mouse_down_y;
+        box_width = (pos.x-mouse_down_x);
+        box_height = (pos.y-mouse_down_y);
     }
     draw();
 });
+canvas.parentElement.addEventListener("wheel", panzoom.zoomWithWheel)
 
 const draw = () => {
     // console.log(image);
-    let imageclone = image.clone();
+    ctx.font = '48px serif';
+    ctx.fillStyle = "red";
+    let imageclone = working_image.clone();
 
     if(mouseDown && inCanvas) {
         if(currentTool === select) {
             if (box_height < 0 && box_height < 0) {
-                imageclone.drawRect(Math.floor(mouse_down_x) + box_width, Math.floor(mouse_down_y) + box_height, -1 * box_width, -1 * box_height, 0xFFFFFF00);
+                imageclone.drawRect(Math.floor(mouse_down_x) + Math.floor(box_width), Math.floor(mouse_down_y) + Math.floor(box_height), -1 * Math.floor(box_width), -1 * Math.floor(box_height), 0xFFFFFF00);
             } else if (box_height < 0) {
-                imageclone.drawRect(Math.floor(mouse_down_x), Math.floor(mouse_down_y) + box_height, box_width, -1 * box_height, 0xFFFFFF00);
+                imageclone.drawRect(Math.floor(mouse_down_x), Math.floor(mouse_down_y) + Math.floor(box_height), Math.floor(box_width), -1 * Math.floor(box_height), 0xFFFFFF00);
             } else if (box_width < 0) {
-                imageclone.drawRect(Math.floor(mouse_down_x) + box_width, Math.floor(mouse_down_y), -1 * box_width, box_height, 0xFFFFFF00);
+                imageclone.drawRect(Math.floor(mouse_down_x) + Math.floor(box_width), Math.floor(mouse_down_y), -1 * Math.floor(box_width), Math.floor(box_height), 0xFFFFFF00);
             } else {
-                imageclone.drawRect(Math.floor(mouse_down_x), Math.floor(mouse_down_y), box_width, box_height, 0xFFFFFF00);
+                imageclone.drawRect(Math.floor(mouse_down_x), Math.floor(mouse_down_y), Math.floor(box_width), Math.floor(box_height), 0xFFFFFF00);
             }
         }
         else if(currentTool === scale){
@@ -136,24 +191,35 @@ const draw = () => {
         imageclone.fillRect(Math.floor(scaledVectors[0].x)-5, Math.floor(scaledVectors[0].y)-5, 10, 10, 0xFFFFFF00);
         imageclone.fillRect(Math.floor(scaledVectors[1].x)-5, Math.floor(scaledVectors[1].y)-5, 10, 10, 0xFFFFFF00);
     }
+    snailMeasuredPoints.forEach((p) => {
+        drawLine(Math.floor(p.x1), Math.floor(p.y1),Math.floor(p.x2), Math.floor(p.y2),1,0xFFFF0000, imageclone );
+    });
+    if(selectedSnail != null){
+        let s = selectedSnail;
 
-
+        imageclone.drawRect(Math.floor(s.minx),Math.floor(s.miny),Math.floor(s.maxx-s.minx),Math.floor(s.maxy-s.miny), 0xFFFF0000);
+    }
     imageclone.draw(canvas);
+    snailMeasuredPoints.forEach((p) => {
+        ctx.fillText(p.max.toFixed(2), Math.floor(p.x1)-10, Math.floor(p.y1)-10);
+    });
 };
 
 function isValidSelection(){
-    return mouse_down_x +box_width> 0 && mouse_down_y + box_height > 0 && box_height + mouse_down_y < canvas_height && box_width + mouse_down_x < canvas_width;
+    return mouse_down_x +box_width > 0 && mouse_down_y + box_height > 0 && box_height + mouse_down_y < canvas_height && box_width + mouse_down_x < canvas_width;
 }
 function crop(){
-        if (box_height < 0 && box_height < 0) {
-            Marvin.crop(image, selection,Math.floor(mouse_down_x) + box_width, Math.floor(mouse_down_y) + box_height, -1 * box_width, -1 * box_height);
+        if (box_height < 0 && box_width < 0) {
+            //TODO do scale before floor
+            Marvin.crop(image, selection,Math.floor(mouse_down_x) + Math.floor(box_width), Math.floor(mouse_down_y) + Math.floor(box_height), -1 * Math.floor(box_width), -1 * Math.floor(box_height));
         } else if (box_height < 0) {
-            Marvin.crop(image, selection,Math.floor(mouse_down_x), Math.floor(mouse_down_y) + box_height, box_width, -1* box_height);
+            Marvin.crop(image, selection,Math.floor(mouse_down_x), Math.floor(mouse_down_y) + Math.floor(box_height), Math.floor(box_width), -1* Math.floor(box_height));
         } else if (box_width < 0) {
-            Marvin.crop(image, selection,Math.floor(mouse_down_x) + box_width, Math.floor(mouse_down_y), -1 * box_width, box_height);
+            Marvin.crop(image, selection,Math.floor(mouse_down_x) + Math.floor(box_width), Math.floor(mouse_down_y), -1 * Math.floor(box_width), Math.floor(box_height));
         } else {
-            Marvin.crop(image, selection,Math.floor(mouse_down_x), Math.floor(mouse_down_y), box_width, box_height);
+            Marvin.crop(image, selection,Math.floor(mouse_down_x), Math.floor(mouse_down_y), Math.floor(box_width), Math.floor(box_height));
         }
+
     process();
 }
 function process(){
@@ -168,16 +234,94 @@ function process(){
             }
         }
     }
+
     let max = 0;
+    let x = { "min": 99999999, "max": 0}, y = {"min": 99999999, "max": 0};
+    let jmax = 0;
+    let current = snailMeasuredPoints.length;
+    edgeList.forEach((s) => {
+        if(s.x < x.min){
+            x.min = s.x
+        }
+        if(s.x > x.max){
+            x.max = s.x
+        }
+        if(s.y < y.min){
+            y.min = s.y
+        }
+        if(s.y > y.max){
+            y.max =s.y
+        }
+    });
+
     for(let i = 0; i < edgeList.length; i++){
         let pointMax = 0;
+
+
+
         for(let j = i; j < edgeList.length; j++){
             let dist = Math.sqrt(Math.pow(edgeList[i].x-edgeList[j].x,2) + Math.pow(edgeList[i].y-edgeList[j].y,2));
-            if(dist > pointMax) pointMax = dist;
+            if(dist > pointMax){
+                jmax = j;
+                pointMax = dist;
+            }
         }
-        if(max < pointMax) max = pointMax;
+        if(max < pointMax){
+            max = pointMax;
+            snailMeasuredPoints[current] = {
+                "x1": edgeList[i].x+mouse_down_x,
+                "y1": edgeList[i].y+mouse_down_y,
+                "x2": edgeList[jmax].x+mouse_down_x,
+                "y2": edgeList[jmax].y+mouse_down_y,
+                "max": max*scaledValue,
+                "minx": x.min + mouse_down_x,
+                "maxx": x.max + mouse_down_x,
+                "miny": y.min + mouse_down_y,
+                "maxy": y.max + mouse_down_y,
+            };
+
+        }
     }
+
+    console.log(snailMeasuredPoints);
     console.log(max*scaledValue);
+    parseSnail(max*scaledValue);
+}
+function parseSnail(x){
+    let tbodyRef = table.getElementsByTagName('tbody')[0];
+
+    let newRow = tbodyRef.insertRow();
+    newRow.snail=snailMeasuredPoints[snailMeasuredPoints.length-1];
+    newRow.addEventListener("click", () => {
+        selectedSnail=newRow.snail;
+        draw();
+    });
+    //panzoom.getOptions().exclude.add(newRow);
+    let newCell = newRow.insertCell();
+    let newText = document.createTextNode("X: " +mouse_down_x.toFixed(2) + ", Y: " + mouse_down_y.toFixed(2) );
+    newCell.appendChild(newText);
+
+    newCell = newRow.insertCell();
+    newText = document.createTextNode("test");
+    newCell.appendChild(newText);
+
+    newCell = newRow.insertCell();
+    newText = document.createTextNode(x.toFixed(2) +"mm");
+    newCell.appendChild(newText);
+
+    newCell = newRow.insertCell();
+    let newButton = document.createElement("button");
+    newButton.innerText = "X"
+
+    newButton.addEventListener("click", (e)=>{
+        tbodyRef.removeChild(newRow);
+        console.log(snailMeasuredPoints.indexOf(newRow.snail));
+        snailMeasuredPoints.splice(snailMeasuredPoints.indexOf(newRow.snail), 1);
+        selectedSnail=null;
+        draw();
+        e.stopImmediatePropagation();
+    })
+    newCell.appendChild(newButton);
 }
 
 function compareColor(r,g,b,i,x,y){
@@ -193,8 +337,8 @@ function compareColor(r,g,b,i,x,y){
 function getMousePos(canvas, evt) {
     var rect = canvas.getBoundingClientRect();
     let pos = {
-        x: evt.clientX - rect.left,
-        y: evt.clientY - rect.top
+        x: (evt.clientX - rect.left)/panzoom.getScale(),
+        y: (evt.clientY - rect.top)/panzoom.getScale()
     };
     // console.log(pos);
     return pos;

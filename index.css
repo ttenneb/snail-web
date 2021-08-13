@@ -1,26 +1,36 @@
-body {
+
+body{
     font-size:12px;
 }
+
 h3 {
     font-size: 16px;
     margin-bottom: 0px;
 }
 canvas {
     margin: 0px 0px 0px 0px;
+    z-index: 0;
 }
-canvas:hover {
-    cursor: crosshair;
+#screen {
+    position: absolute;
 }
+
 label {
     margin: 4px 4px;
 }
-#main{
-    display: flex;
-    flex-direction: row;
-    padding: 0px 0px 0px 0px;
-}
+/*#main{*/
+/*    display: flex;*/
+/*    flex-direction: row;*/
+/*    padding: 0px 0px 0px 0px;*/
+/*}*/
 #menu {
+    padding-top: 25px;
     margin-left: 8px;
+    z-index: 100;
+    background: aliceblue;
+    display: inline-block;
+    height: 200px;
+    position: absolute;
 }
 #menu > * {
     margin-bottom: 12px;
@@ -30,7 +40,27 @@ label {
     display: flex;
     flex-direction: row;
 }
+#snails {
+    z-index: 200;
+    margin-left: 8px;
+    background: aliceblue;
+    display: inline-block;
+    height: 200px;
+    position: absolute;
+    scroll-behavior: auto;
+}
+table,
+td {
+    border: 1px solid #333;
+    z-index: 200;
+}
 
+thead,
+tfoot {
+    background-color: #333;
+    color: #fff;
+    z-index: 200;
+}
 /*.menu {*/
 /*    display: block;*/
 /*}*/
