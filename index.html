@@ -11,12 +11,12 @@
         <canvas id="canvas" ></canvas>
     </div>
     <div id="menu">
-        <label>Scale: <input type="text" id="scale"></label>
+        <label>Scale: <input type="text" id="scale"> mm</label>
         <div id="species-selector">
             <label>Species: </label>
-            <button>Bio</button>
-            <button>Pha</button>
-            <button>GUH</button>
+            <button id = "bio">Biomphalaria</button>
+            <button id = "mel">Melanoides</button>
+            <button id = "phy">Physa</button>
         </div>
         <div id="tool-selector">
             <label>Tools: </label>
@@ -28,9 +28,11 @@
         </div>
         <div id="Options -selector">
             <label>Options: </label>
-            <button>Download</button>
-            <button>Upload</button>
             <button id="panzoom-button">Enable pan</button>
+            <button id="download">Download</button>
+            <button id="show">Show Image</button>
+            <input type="file" id="myFile">
+
         </div>
 
 
@@ -42,7 +44,7 @@
                     <td>Position</td>
                     <td>Species</td>
                     <td>Length (mm)</td>
-                    <td><button>X</button></td>
+                    <td>Delete</td>
                 </tr>
             </tbody>
         </table>

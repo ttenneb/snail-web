@@ -7,7 +7,9 @@ const snailTable = document.getElementById("snails");
 const table = document.getElementById("table");
 
 let image = new MarvinImage();
+let image_original;
 let mouseDown = false;
+let shiftDown = false;
 let mouse_x = 0;
 let mouse_y = 0;
 let mouse_down_x = 0;
@@ -20,6 +22,7 @@ let scaledValue = 0;
 let scaledVectors = [{},{}];
 
 var working_image = new MarvinImage();
+var working_image_original = new MarvinImage();
 let selection = new MarvinImage();
 var snailPts = [];
 let snailMeasuredPoints = [];
@@ -30,9 +33,14 @@ let canvas_height = canvas.clientHeight;
 
 var scaleValue = document.getElementById("scale");
 let selectedSnail = -1;
+let species = "Not Specified"
+let showProcessed = false;
 
 var currentTool = select;
 let inCanvas = false;
+
+
+let snailSearchRange = 3;
 
 const panzoom = Panzoom(canvas, {
     maxScale: 5,
@@ -56,6 +64,10 @@ canvas.style.cursor = "crosshair";
 document.getElementById("canvas").addEventListener("mouseenter", () => {inCanvas = true;});
 document.getElementById("canvas").addEventListener("mouseout", () => {inCanvas = false;});
 
+document.getElementById("bio").addEventListener("click", () => species = "Biomphalaria")
+document.getElementById("mel").addEventListener("click", () => species = "Melanoides")
+document.getElementById("phy").addEventListener("click", () => species = "Physa")
+
 document.getElementById("sel").addEventListener("click", selectButton);
 function selectButton(){
     currentTool = select;
@@ -67,14 +79,38 @@ function scaleButton(){
 }
 document.getElementById("pen").addEventListener("click", penButton);
 function penButton(){
-    panzoom.zoom(2, {animate: true})
+    currentTool = pen;
 
 }
 document.getElementById("delete").addEventListener("click", deleteButton);
 function deleteButton(){
-    panzoom.zoom(2, {animate: true})
-
+    console.log(snailMeasuredPoints);
 }
+document.getElementById("download").addEventListener("click", downloadButton);
+function downloadButton(){
+   let output = "X, Y, Species, Length (mm) \n"
+    snailMeasuredPoints.forEach((s) => {
+        console.log(s);
+       output += s.x1 + ", " + s.y1 + ", " + s.species+  ", " + s.max + '\n';
+    });
+    download("output.csv", output)
+}
+document.getElementById("show").addEventListener("click", () => {
+    showProcessed = !showProcessed;
+    draw();
+});
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Shift") panzoom.setOptions({
+        maxScale: 5,
+        exclude: []
+    });
+});
+document.addEventListener("keyup", (e) => {
+    if (e.key === "Shift")panzoom.setOptions({
+        maxScale: 5,
+        exclude: [canvas]
+    });
+});
 
 document.getElementById("panzoom-button").addEventListener("click", panzoomButton);
 function panzoomButton(){
@@ -94,27 +130,35 @@ function panzoomButton(){
     }
 
 }
+document.getElementById("myFile").addEventListener("input", upload)
+function upload() {
+    console.log(URL.createObjectURL(document.getElementById("myFile").files[0]));
+    image.load(URL.createObjectURL(document.getElementById("myFile").files[0]), function () {
+        working_image = image.clone();
 
-image.load("DSC00050.JPG", function(){
-    working_image = image.clone();
-
-    var temp = new MarvinImage();
-    Marvin.scale(image, temp, canvas_width, canvas_height);
-    image = temp;
-    working_image = image.clone();
-    for(let i = 0; i < image.getWidth(); i++){
-        for(let j = 0; j < image.getHeight(); j++){
-            if(compareColor(-1,60,40, image,i,j) == -1){
-                    image.setIntColor(i,j,250, 0, 0, 250);
-            }else snailPts.push([[i,j]]);
+        var temp = new MarvinImage();
+        Marvin.scale(image, temp, canvas_width, canvas_height);
+        image = temp;
+        working_image = image.clone();
+        working_image_original = image.clone();
+        for (let i = 0; i < image.getWidth(); i++) {
+            for (let j = 0; j < image.getHeight(); j++) {
+                if (compareColor(-1, 60, 40, image, i, j) == -1) {
+                    image.setIntColor(i, j, 250, 0, 0, 250);
+                } else snailPts.push([[i, j]]);
+            }
         }
-    }
+        image_original = image.clone();
+        draw();
 
-    draw();
-
-});
-
-
+    });
+}
+document.getElementById("myFile").click();
+function pen(){
+    console.log("g")
+    image.fillRect(Math.floor(mouse_x-1), Math.floor(mouse_y-1), 3,3, 0xFF0000FF);
+    working_image.fillRect(Math.floor(mouse_x-1), Math.floor(mouse_y-1), 3,3, 0xFF0000FF);
+}
 function select(){
     console.log(isValidSelection());
     if(isValidSelection()   )
@@ -154,19 +198,25 @@ canvas.parentElement.addEventListener("mousemove", (event) => {
     mouse_x = pos.x;
     mouse_y = pos.y;
     if(mouseDown){
-
         box_width = (pos.x-mouse_down_x);
         box_height = (pos.y-mouse_down_y);
+
+        if(inCanvas && currentTool === pen ) currentTool();
     }
+
     draw();
 });
 canvas.parentElement.addEventListener("wheel", panzoom.zoomWithWheel)
 
 const draw = () => {
     // console.log(image);
-    ctx.font = '48px serif';
+    ctx.font = '16px serif';
     ctx.fillStyle = "red";
-    let imageclone = working_image.clone();
+    let imageclone;
+    if(!showProcessed)
+        imageclone = working_image.clone();
+    else
+        imageclone = image.clone();
 
     if(mouseDown && inCanvas) {
         if(currentTool === select) {
@@ -197,7 +247,7 @@ const draw = () => {
     if(selectedSnail != null){
         let s = selectedSnail;
 
-        imageclone.drawRect(Math.floor(s.minx),Math.floor(s.miny),Math.floor(s.maxx-s.minx),Math.floor(s.maxy-s.miny), 0xFFFF0000);
+        imageclone.drawRect(Math.floor(s.minx),Math.floor(s.miny),Math.floor(s.maxx-s.minx),Math.floor(s.maxy-s.miny), 0xFF00FF00);
     }
     imageclone.draw(canvas);
     snailMeasuredPoints.forEach((p) => {
@@ -222,70 +272,104 @@ function crop(){
 
     process();
 }
-function process(){
+async function process(){
     Marvin.prewitt(selection.clone(), selection);
-    //Marvin.grayScale(selection.clone(), selection);
-
-    let edgeList = [];
+    let edges = [];
+    let edgeMap = new Map()
     for(let i = 0; i < selection.getWidth(); i++){
         for(let j = 0; j < selection.getHeight(); j++){
-            if(selection.getIntComponent0(i,j) > 160 && selection.getIntComponent2(i,j) > 230){
-                edgeList.push({x:i,y:j});
+            if(selection.getIntComponent0(i,j) > 140 && selection.getIntComponent2(i,j) > 230){
+                edgeMap.set(i+j*image.getWidth(), edges.length);
+                edges.push({x:i,y:j, assigned: -1});
             }
         }
     }
+    let snails = [];
+    for(const e of edges){
+       if(e.assigned == -1){
+           snails[snails.length] = [];
+           await search(e, edgeMap, edges, snails.length-1, snails);
+       }
+    };
+    console.log(snails);
+    snails.forEach((edgeList) =>
+    {
+        if(edgeList.length < 10) return;
+        let max = 0;
+        let x = {"min": 99999999, "max": 0}, y = {"min": 99999999, "max": 0};
+        let jmax = 0;
+        let current = snailMeasuredPoints.length;
+        edgeList.forEach((s) => {
+            if (s.x < x.min) {
+                x.min = s.x
+            }
+            if (s.x > x.max) {
+                x.max = s.x
+            }
+            if (s.y < y.min) {
+                y.min = s.y
+            }
+            if (s.y > y.max) {
+                y.max = s.y
+            }
+        });
 
-    let max = 0;
-    let x = { "min": 99999999, "max": 0}, y = {"min": 99999999, "max": 0};
-    let jmax = 0;
-    let current = snailMeasuredPoints.length;
-    edgeList.forEach((s) => {
-        if(s.x < x.min){
-            x.min = s.x
+        for (let i = 0; i < edgeList.length; i++) {
+            let pointMax = 0;
+
+
+            for (let j = i; j < edgeList.length; j++) {
+                let dist = Math.sqrt(Math.pow(edgeList[i].x - edgeList[j].x, 2) + Math.pow(edgeList[i].y - edgeList[j].y, 2));
+                if (dist > pointMax) {
+                    jmax = j;
+                    pointMax = dist;
+                }
+            }
+            if (max < pointMax) {
+                max = pointMax;
+                if(max*scaledValue > 2) snailMeasuredPoints[current] = {
+                    "x1": edgeList[i].x + mouse_down_x,
+                    "y1": edgeList[i].y + mouse_down_y,
+                    "x2": edgeList[jmax].x + mouse_down_x,
+                    "y2": edgeList[jmax].y + mouse_down_y,
+                    "max": max * scaledValue,
+                    "minx": x.min + mouse_down_x,
+                    "maxx": x.max + mouse_down_x,
+                    "miny": y.min + mouse_down_y,
+                    "maxy": y.max + mouse_down_y,
+                    "species": species
+                };
+
+            }
         }
-        if(s.x > x.max){
-            x.max = s.x
-        }
-        if(s.y < y.min){
-            y.min = s.y
-        }
-        if(s.y > y.max){
-            y.max =s.y
+
+        console.log(snailMeasuredPoints);
+        console.log(max * scaledValue);
+        if(max * scaledValue > 2) {
+            parseSnail(max * scaledValue);
         }
     });
-
-    for(let i = 0; i < edgeList.length; i++){
-        let pointMax = 0;
-
-
-
-        for(let j = i; j < edgeList.length; j++){
-            let dist = Math.sqrt(Math.pow(edgeList[i].x-edgeList[j].x,2) + Math.pow(edgeList[i].y-edgeList[j].y,2));
-            if(dist > pointMax){
-                jmax = j;
-                pointMax = dist;
-            }
+}
+function search(e, edgeMap, edges, snail, snails) {
+    let index = edgeMap.get(e.x+e.y*image.getWidth());
+    if(index != undefined && edges[index].assigned == -1){
+        edges[index].assigned = snail;
+        console.log(snail);
+        for(let i = 1; i <= snailSearchRange; i++) {
+            search({x: e.x + i, y: e.y}, edgeMap, edges, snail, snails);
+            search({x: e.x, y: e.y + i}, edgeMap, edges, snail, snails);
+            search({x: e.x + i, y: e.y + i}, edgeMap, edges, snail, snails);
+            search({x: e.x - i, y: e.y}, edgeMap, edges, snail, snails);
+            search({x: e.x, y: e.y - i}, edgeMap, edges, snail, snails);
+            search({x: e.x - i, y: e.y - i}, edgeMap, edges, snail, snails);
+            search({x: e.x + i, y: e.y - i}, edgeMap, edges, snail, snails);
+            search({x: e.x - i, y: e.y + i}, edgeMap, edges, snail, snails);
         }
-        if(max < pointMax){
-            max = pointMax;
-            snailMeasuredPoints[current] = {
-                "x1": edgeList[i].x+mouse_down_x,
-                "y1": edgeList[i].y+mouse_down_y,
-                "x2": edgeList[jmax].x+mouse_down_x,
-                "y2": edgeList[jmax].y+mouse_down_y,
-                "max": max*scaledValue,
-                "minx": x.min + mouse_down_x,
-                "maxx": x.max + mouse_down_x,
-                "miny": y.min + mouse_down_y,
-                "maxy": y.max + mouse_down_y,
-            };
-
-        }
+        //console.log(snails);
+        snails[snail].push(edges[index]);
+        return true;
     }
-
-    console.log(snailMeasuredPoints);
-    console.log(max*scaledValue);
-    parseSnail(max*scaledValue);
+    return false;
 }
 function parseSnail(x){
     let tbodyRef = table.getElementsByTagName('tbody')[0];
@@ -298,11 +382,11 @@ function parseSnail(x){
     });
     //panzoom.getOptions().exclude.add(newRow);
     let newCell = newRow.insertCell();
-    let newText = document.createTextNode("X: " +mouse_down_x.toFixed(2) + ", Y: " + mouse_down_y.toFixed(2) );
+    let newText = document.createTextNode("X: " +newRow.snail.minx.toFixed(2) + ", Y: " + newRow.snail.miny.toFixed(2) );
     newCell.appendChild(newText);
 
     newCell = newRow.insertCell();
-    newText = document.createTextNode("test");
+    newText = document.createTextNode(newRow.snail.species);
     newCell.appendChild(newText);
 
     newCell = newRow.insertCell();
@@ -311,7 +395,7 @@ function parseSnail(x){
 
     newCell = newRow.insertCell();
     let newButton = document.createElement("button");
-    newButton.innerText = "X"
+    newButton.innerText = "Delete"
 
     newButton.addEventListener("click", (e)=>{
         tbodyRef.removeChild(newRow);
@@ -385,4 +469,16 @@ function drawLine( x1,  y1,  x2,  y2, size, color, image) {
             }
         }
     }
+}
+function download(filename, text) {
+    let element = document.createElement('a');
+    element.setAttribute('href', "data:text/csv;charset=utf-8," + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
 }

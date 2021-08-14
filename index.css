@@ -29,8 +29,10 @@ label {
     z-index: 100;
     background: aliceblue;
     display: inline-block;
-    height: 200px;
+    height: 160px;
+    width: 320px;
     position: absolute;
+    overflow: auto;
 }
 #menu > * {
     margin-bottom: 12px;
@@ -42,12 +44,13 @@ label {
 }
 #snails {
     z-index: 200;
-    margin-left: 8px;
+    margin-left: 485px;
     background: aliceblue;
     display: inline-block;
     height: 200px;
     position: absolute;
     scroll-behavior: auto;
+    overflow: scroll;
 }
 table,
 td {
