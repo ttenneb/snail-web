@@ -84,13 +84,11 @@ function penButton(){
 }
 document.getElementById("delete").addEventListener("click", deleteButton);
 function deleteButton(){
-    console.log(snailMeasuredPoints);
 }
 document.getElementById("download").addEventListener("click", downloadButton);
 function downloadButton(){
    let output = "X, Y, Species, Length (mm) \n"
     snailMeasuredPoints.forEach((s) => {
-        console.log(s);
        output += s.x1 + ", " + s.y1 + ", " + s.species+  ", " + s.max + '\n';
     });
     download("output.csv", output)
@@ -132,7 +130,6 @@ function panzoomButton(){
 }
 document.getElementById("myFile").addEventListener("input", upload)
 function upload() {
-    console.log(URL.createObjectURL(document.getElementById("myFile").files[0]));
     image.load(URL.createObjectURL(document.getElementById("myFile").files[0]), function () {
         working_image = image.clone();
 
@@ -155,12 +152,10 @@ function upload() {
 }
 document.getElementById("myFile").click();
 function pen(){
-    console.log("g")
     image.fillRect(Math.floor(mouse_x-1), Math.floor(mouse_y-1), 3,3, 0xFF0000FF);
     working_image.fillRect(Math.floor(mouse_x-1), Math.floor(mouse_y-1), 3,3, 0xFF0000FF);
 }
 function select(){
-    console.log(isValidSelection());
     if(isValidSelection()   )
         crop();
 }
@@ -175,7 +170,6 @@ function scale(){
     if(x > 0){
 
         scaledValue = x/distance;
-        console.log(scaledValue);
     }
 }
 
@@ -209,7 +203,6 @@ canvas.parentElement.addEventListener("mousemove", (event) => {
 canvas.parentElement.addEventListener("wheel", panzoom.zoomWithWheel)
 
 const draw = () => {
-    // console.log(image);
     ctx.font = '16px serif';
     ctx.fillStyle = "red";
     let imageclone;
@@ -291,7 +284,6 @@ async function process(){
            await search(e, edgeMap, edges, snails.length-1, snails);
        }
     };
-    console.log(snails);
     snails.forEach((edgeList) =>
     {
         if(edgeList.length < 10) return;
@@ -343,8 +335,6 @@ async function process(){
             }
         }
 
-        console.log(snailMeasuredPoints);
-        console.log(max * scaledValue);
         if(max * scaledValue > 2) {
             parseSnail(max * scaledValue);
         }
@@ -354,7 +344,6 @@ function search(e, edgeMap, edges, snail, snails) {
     let index = edgeMap.get(e.x+e.y*image.getWidth());
     if(index != undefined && edges[index].assigned == -1){
         edges[index].assigned = snail;
-        console.log(snail);
         for(let i = 1; i <= snailSearchRange; i++) {
             search({x: e.x + i, y: e.y}, edgeMap, edges, snail, snails);
             search({x: e.x, y: e.y + i}, edgeMap, edges, snail, snails);
@@ -365,7 +354,6 @@ function search(e, edgeMap, edges, snail, snails) {
             search({x: e.x + i, y: e.y - i}, edgeMap, edges, snail, snails);
             search({x: e.x - i, y: e.y + i}, edgeMap, edges, snail, snails);
         }
-        //console.log(snails);
         snails[snail].push(edges[index]);
         return true;
     }
@@ -399,7 +387,6 @@ function parseSnail(x){
 
     newButton.addEventListener("click", (e)=>{
         tbodyRef.removeChild(newRow);
-        console.log(snailMeasuredPoints.indexOf(newRow.snail));
         snailMeasuredPoints.splice(snailMeasuredPoints.indexOf(newRow.snail), 1);
         selectedSnail=null;
         draw();
@@ -424,7 +411,6 @@ function getMousePos(canvas, evt) {
         x: (evt.clientX - rect.left)/panzoom.getScale(),
         y: (evt.clientY - rect.top)/panzoom.getScale()
     };
-    // console.log(pos);
     return pos;
 }
 function drawLine( x1,  y1,  x2,  y2, size, color, image) {
