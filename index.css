@@ -48,6 +48,7 @@ label {
     background: aliceblue;
     display: inline-block;
     height: 200px;
+    width: 300px;
     position: absolute;
     scroll-behavior: auto;
     overflow: scroll;

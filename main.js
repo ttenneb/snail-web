@@ -5,6 +5,9 @@ canvas.height=innerHeight;
 const menu = document.getElementById("menu");
 const snailTable = document.getElementById("snails");
 const table = document.getElementById("table");
+const tbodyRef = table.getElementsByTagName('tbody')[0];
+let snailRowMap = new Map();
+
 
 let image = new MarvinImage();
 let image_original;
@@ -20,6 +23,8 @@ let box_height = 0;
 let box_width = 0;
 let scaledValue = 0;
 let scaledVectors = [{},{}];
+let loaded = false;
+//TODO unload
 
 var working_image = new MarvinImage();
 var working_image_original = new MarvinImage();
@@ -91,6 +96,7 @@ function downloadButton(){
     snailMeasuredPoints.forEach((s) => {
        output += s.x1 + ", " + s.y1 + ", " + s.species+  ", " + s.max + '\n';
     });
+    console.log(output);
     download("output.csv", output)
 }
 document.getElementById("show").addEventListener("click", () => {
@@ -146,6 +152,7 @@ function upload() {
             }
         }
         image_original = image.clone();
+        loaded = true;
         draw();
 
     });
@@ -203,49 +210,53 @@ canvas.parentElement.addEventListener("mousemove", (event) => {
 canvas.parentElement.addEventListener("wheel", panzoom.zoomWithWheel)
 
 const draw = () => {
-    ctx.font = '16px serif';
-    ctx.fillStyle = "red";
-    let imageclone;
-    if(!showProcessed)
-        imageclone = working_image.clone();
-    else
-        imageclone = image.clone();
+    if(loaded){
+        ctx.font = '16px serif';
+        ctx.fillStyle = "red";
+        let imageclone;
+        if(!showProcessed)
+        
+            imageclone = working_image.clone();
+        else
 
-    if(mouseDown && inCanvas) {
-        if(currentTool === select) {
-            if (box_height < 0 && box_height < 0) {
-                imageclone.drawRect(Math.floor(mouse_down_x) + Math.floor(box_width), Math.floor(mouse_down_y) + Math.floor(box_height), -1 * Math.floor(box_width), -1 * Math.floor(box_height), 0xFFFFFF00);
-            } else if (box_height < 0) {
-                imageclone.drawRect(Math.floor(mouse_down_x), Math.floor(mouse_down_y) + Math.floor(box_height), Math.floor(box_width), -1 * Math.floor(box_height), 0xFFFFFF00);
-            } else if (box_width < 0) {
-                imageclone.drawRect(Math.floor(mouse_down_x) + Math.floor(box_width), Math.floor(mouse_down_y), -1 * Math.floor(box_width), Math.floor(box_height), 0xFFFFFF00);
-            } else {
-                imageclone.drawRect(Math.floor(mouse_down_x), Math.floor(mouse_down_y), Math.floor(box_width), Math.floor(box_height), 0xFFFFFF00);
+           imageclone = image.clone();
+
+        if(mouseDown && inCanvas) {
+            if(currentTool === select) {
+                if (box_height < 0 && box_height < 0) {
+                    imageclone.drawRect(Math.floor(mouse_down_x) + Math.floor(box_width), Math.floor(mouse_down_y) + Math.floor(box_height), -1 * Math.floor(box_width), -1 * Math.floor(box_height), 0xFFFFFF00);
+                } else if (box_height < 0) {
+                    imageclone.drawRect(Math.floor(mouse_down_x), Math.floor(mouse_down_y) + Math.floor(box_height), Math.floor(box_width), -1 * Math.floor(box_height), 0xFFFFFF00);
+                } else if (box_width < 0) {
+                    imageclone.drawRect(Math.floor(mouse_down_x) + Math.floor(box_width), Math.floor(mouse_down_y), -1 * Math.floor(box_width), Math.floor(box_height), 0xFFFFFF00);
+                } else {
+                    imageclone.drawRect(Math.floor(mouse_down_x), Math.floor(mouse_down_y), Math.floor(box_width), Math.floor(box_height), 0xFFFFFF00);
+                }
+            }
+            else if(currentTool === scale){
+                drawLine(Math.floor(mouse_down_x), Math.floor(mouse_down_y),Math.floor(mouse_x), Math.floor(mouse_y),3,0xFFFFFF00, imageclone );
+                imageclone.fillRect(Math.floor(mouse_down_x)-5, Math.floor(mouse_down_y)-5, 10, 10, 0xFFFFFF00);
+                imageclone.fillRect(Math.floor(mouse_x)-5, Math.floor(mouse_y)-5, 10, 10, 0xFFFFFF00);
             }
         }
-        else if(currentTool === scale){
-            drawLine(Math.floor(mouse_down_x), Math.floor(mouse_down_y),Math.floor(mouse_x), Math.floor(mouse_y),3,0xFFFFFF00, imageclone );
-            imageclone.fillRect(Math.floor(mouse_down_x)-5, Math.floor(mouse_down_y)-5, 10, 10, 0xFFFFFF00);
-            imageclone.fillRect(Math.floor(mouse_x)-5, Math.floor(mouse_y)-5, 10, 10, 0xFFFFFF00);
+        if(scaledValue !=0 ){
+            drawLine(Math.floor(scaledVectors[0].x), Math.floor(scaledVectors[0].y),Math.floor(scaledVectors[1].x), Math.floor(scaledVectors[1].y),3,0xFFFFFF00, imageclone );
+            imageclone.fillRect(Math.floor(scaledVectors[0].x)-5, Math.floor(scaledVectors[0].y)-5, 10, 10, 0xFFFFFF00);
+            imageclone.fillRect(Math.floor(scaledVectors[1].x)-5, Math.floor(scaledVectors[1].y)-5, 10, 10, 0xFFFFFF00);
         }
-    }
-    if(scaledValue !=0 ){
-        drawLine(Math.floor(scaledVectors[0].x), Math.floor(scaledVectors[0].y),Math.floor(scaledVectors[1].x), Math.floor(scaledVectors[1].y),3,0xFFFFFF00, imageclone );
-        imageclone.fillRect(Math.floor(scaledVectors[0].x)-5, Math.floor(scaledVectors[0].y)-5, 10, 10, 0xFFFFFF00);
-        imageclone.fillRect(Math.floor(scaledVectors[1].x)-5, Math.floor(scaledVectors[1].y)-5, 10, 10, 0xFFFFFF00);
-    }
-    snailMeasuredPoints.forEach((p) => {
-        drawLine(Math.floor(p.x1), Math.floor(p.y1),Math.floor(p.x2), Math.floor(p.y2),1,0xFFFF0000, imageclone );
-    });
-    if(selectedSnail != null){
-        let s = selectedSnail;
+        snailMeasuredPoints.forEach((p) => {
+            drawLine(Math.floor(p.x1), Math.floor(p.y1),Math.floor(p.x2), Math.floor(p.y2),1,0xFFFF0000, imageclone );
+        });
+        if(selectedSnail != null){
+            let s = selectedSnail;
 
-        imageclone.drawRect(Math.floor(s.minx),Math.floor(s.miny),Math.floor(s.maxx-s.minx),Math.floor(s.maxy-s.miny), 0xFF00FF00);
+            imageclone.drawRect(Math.floor(s.minx),Math.floor(s.miny),Math.floor(s.maxx-s.minx),Math.floor(s.maxy-s.miny), 0xFF00FF00);
+        }
+        imageclone.draw(canvas);
+        snailMeasuredPoints.forEach((p) => {
+            ctx.fillText(p.max.toFixed(2), Math.floor(p.x1)-10, Math.floor(p.y1)-10);
+        });
     }
-    imageclone.draw(canvas);
-    snailMeasuredPoints.forEach((p) => {
-        ctx.fillText(p.max.toFixed(2), Math.floor(p.x1)-10, Math.floor(p.y1)-10);
-    });
 };
 
 function isValidSelection(){
@@ -329,7 +340,8 @@ async function process(){
                     "maxx": x.max + mouse_down_x,
                     "miny": y.min + mouse_down_y,
                     "maxy": y.max + mouse_down_y,
-                    "species": species
+                    "species": species,
+                    "toBeDeleted": false
                 };
 
             }
@@ -339,6 +351,28 @@ async function process(){
             parseSnail(max * scaledValue);
         }
     });
+    let toBeDeleted = [];
+    for(let i = 0; i < snailMeasuredPoints.length; i++){
+        for(let j = i+1; j < snailMeasuredPoints.length; j++){
+            if(DoBoxesIntersect(snailMeasuredPoints[i], snailMeasuredPoints[j])){
+                console.log("guh");
+                let min = Math.min(snailMeasuredPoints[i].max, snailMeasuredPoints[j].max);
+                if(min == snailMeasuredPoints[i].max){
+                    toBeDeleted.push(i);
+                }else if(min == snailMeasuredPoints[j].max){
+                    toBeDeleted.push(j);
+                }
+
+            }
+        }
+    }
+    console.log(snailMeasuredPoints)
+    console.log(toBeDeleted);
+    for(let i = toBeDeleted.length-1; i > -1; i--){
+        removeSnail(snailMeasuredPoints[toBeDeleted[i]]);
+    }
+    console.log(snailMeasuredPoints)
+    
 }
 function search(e, edgeMap, edges, snail, snails) {
     let index = edgeMap.get(e.x+e.y*image.getWidth());
@@ -360,10 +394,10 @@ function search(e, edgeMap, edges, snail, snails) {
     return false;
 }
 function parseSnail(x){
-    let tbodyRef = table.getElementsByTagName('tbody')[0];
 
     let newRow = tbodyRef.insertRow();
     newRow.snail=snailMeasuredPoints[snailMeasuredPoints.length-1];
+    snailRowMap.set(newRow.snail, newRow);
     newRow.addEventListener("click", () => {
         selectedSnail=newRow.snail;
         draw();
@@ -386,15 +420,19 @@ function parseSnail(x){
     newButton.innerText = "Delete"
 
     newButton.addEventListener("click", (e)=>{
-        tbodyRef.removeChild(newRow);
-        snailMeasuredPoints.splice(snailMeasuredPoints.indexOf(newRow.snail), 1);
-        selectedSnail=null;
+        removeSnail(newRow.snail);
         draw();
         e.stopImmediatePropagation();
     })
     newCell.appendChild(newButton);
 }
 
+function removeSnail(s) {
+    tbodyRef.removeChild(snailRowMap.get(s));
+    snailRowMap.delete(s);
+    snailMeasuredPoints.splice(snailMeasuredPoints.indexOf(s), 1);
+    selectedSnail=null;
+}
 function compareColor(r,g,b,i,x,y){
     let pass = 0;
     if(r == -1 ||  r > i.getIntComponent0(x,y)) pass++;
@@ -468,3 +506,7 @@ function download(filename, text) {
 
     document.body.removeChild(element);
 }
+function DoBoxesIntersect( a, b) {
+    return (Math.abs((a.minx + (a.maxx-a.minx)/2) - (b.minx + (b.maxx-b.minx)/2)) * 2 < ((a.maxx-a.minx) + (b.maxx-b.minx))) &&
+           (Math.abs((a.miny + (a.maxy-a.miny)/2) - (b.miny + (b.maxy-b.miny)/2)) * 2 < ((a.maxy-a.miny) + (b.maxy-b.miny)));
+  }
