@@ -30,7 +30,7 @@ label {
     background: aliceblue;
     display: inline-block;
     height: 160px;
-    width: 320px;
+    width: 360px;
     position: absolute;
     overflow: auto;
 }

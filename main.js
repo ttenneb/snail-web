@@ -4,8 +4,11 @@ canvas.width = innerWidth;
 canvas.height=innerHeight;
 const menu = document.getElementById("menu");
 const snailTable = document.getElementById("snails");
+const enableRemover = document.getElementById("remover");
 const table = document.getElementById("table");
 const tbodyRef = table.getElementsByTagName('tbody')[0];
+
+
 let snailRowMap = new Map();
 
 
@@ -20,6 +23,12 @@ let mouse_down_x = 0;
 let mouse_down_y = 0;
 let mouse_up_x = 0;
 let mouse_up_y = 0;
+let box_position = {
+    "x1": 0,
+    "x2":0,
+    "y1": 0,
+    "y2": 0
+}
 let box_height = 0;
 let box_width = 0;
 let scaledValue = 0;
@@ -32,6 +41,7 @@ var working_image_original = new MarvinImage();
 let selection = new MarvinImage();
 var snailPts = [];
 let snailMeasuredPoints = [];
+let penStack = {x:0, y:0};
 
 let canvas_width = canvas.clientWidth;
 let canvas_height = canvas.clientHeight;
@@ -88,8 +98,10 @@ function penButton(){
     currentTool = pen;
 
 }
-document.getElementById("delete").addEventListener("click", deleteButton);
-function deleteButton(){
+document.getElementById("erase").addEventListener("click", eraseButton);
+function eraseButton(){
+    currentTool = erase;
+
 }
 document.getElementById("download").addEventListener("click", downloadButton);
 function downloadButton(){
@@ -160,12 +172,26 @@ function upload() {
 }
 document.getElementById("myFile").click();
 function pen(){
-    image.fillRect(Math.floor(mouse_x-1), Math.floor(mouse_y-1), 3,3, 0xFF0000FF);
-    image_original.fillRect(Math.floor(mouse_x-1), Math.floor(mouse_y-1), 3,3, 0xFF0000FF);
-    working_image.fillRect(Math.floor(mouse_x-1), Math.floor(mouse_y-1), 3,3, 0xFF0000FF);
+    drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFF0000FF, image);
+    drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFF0000FF, image_original)
+    drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFF0000FF, working_image)
+    // image.fillRect(Math.floor(point.x-4), Math.floor(point.y-4), 8,8, 0xFF0000FF);
+    // image_original.fillRect(Math.floor(point.x-4), Math.floor(point.y-4), 8,8, 0xFF0000FF);
+    // working_image.fillRect(Math.floor(point.x-4), Math.floor(point.y-4), 8,8, 0xFF0000FF);
+    
+}
+function erase(){
+    for(let i = Math.floor(box_position.x1); i < box_position.x1+box_width; i++){
+        for(let j = Math.floor(box_position.y1); j < box_height+box_position.y1; j++){
+            working_image.setIntColor(i,j,working_image_original.getIntColor(i,j));
+            image.setIntColor(i,j,image_original2.getIntColor(i,j));
+            image_original.setIntColor(i,j,image_original2.getIntColor(i,j));
+        }
+    }
+    
 }
 function select(){
-    if(isValidSelection()   )
+    if(isValidSelection())
         crop();
 }
 function scale(){
@@ -194,10 +220,17 @@ canvas.parentElement.addEventListener("mouseup", (event) => {
     let pos = getMousePos(canvas, event);
     mouse_up_x = pos.x;
     mouse_up_y = pos.y;
+    
+
+    box_position.x1 = Math.min(mouse_down_x, mouse_up_x);
+    box_position.y1 = Math.min(mouse_down_y, mouse_up_y);
     if(inCanvas) currentTool();
+
 });
 canvas.parentElement.addEventListener("mousemove", (event) => {
     let pos = getMousePos(canvas, event)
+    penStack.x = mouse_x;
+    penStack.y = mouse_y;
     mouse_x = pos.x;
     mouse_y = pos.y;
     if(mouseDown){
@@ -235,6 +268,17 @@ const draw = () => {
                     imageclone.drawRect(Math.floor(mouse_down_x), Math.floor(mouse_down_y), Math.floor(box_width), Math.floor(box_height), 0xFFFFFF00);
                 }
             }
+            if(currentTool === erase) {
+                if (box_height < 0 && box_height < 0) {
+                    imageclone.drawRect(Math.floor(mouse_down_x) + Math.floor(box_width), Math.floor(mouse_down_y) + Math.floor(box_height), -1 * Math.floor(box_width), -1 * Math.floor(box_height), 0xFFFF0000);
+                } else if (box_height < 0) {
+                    imageclone.drawRect(Math.floor(mouse_down_x), Math.floor(mouse_down_y) + Math.floor(box_height), Math.floor(box_width), -1 * Math.floor(box_height), 0xFFFF0000);
+                } else if (box_width < 0) {
+                    imageclone.drawRect(Math.floor(mouse_down_x) + Math.floor(box_width), Math.floor(mouse_down_y), -1 * Math.floor(box_width), Math.floor(box_height), 0xFFFF0000);
+                } else {
+                    imageclone.drawRect(Math.floor(mouse_down_x), Math.floor(mouse_down_y), Math.floor(box_width), Math.floor(box_height), 0xFFFF0000);
+                }
+            }
             else if(currentTool === scale){
                 drawLine(Math.floor(mouse_down_x), Math.floor(mouse_down_y),Math.floor(mouse_x), Math.floor(mouse_y),3,0xFFFFFF00, imageclone );
                 imageclone.fillRect(Math.floor(mouse_down_x)-5, Math.floor(mouse_down_y)-5, 10, 10, 0xFFFFFF00);
@@ -262,7 +306,8 @@ const draw = () => {
 };
 
 function isValidSelection(){
-    return mouse_down_x +box_width > 0 && mouse_down_y + box_height > 0 && box_height + mouse_down_y < canvas_height && box_width + mouse_down_x < canvas_width;
+    if(Math.abs(magnitude(mouse_down_x,mouse_down_y)-magnitude(mouse_up_x,mouse_down_y)) > 10) return mouse_down_x +box_width > 0 && mouse_down_y + box_height > 0 && box_height + mouse_down_y < canvas_height && box_width + mouse_down_x < canvas_width;
+    else return false;
 }
 function crop(){
         if (box_height < 0 && box_width < 0) {
@@ -306,7 +351,7 @@ async function process(){
         let jmax = 0;
         let current = snailMeasuredPoints.length;
         edgeList.forEach((s) => {
-            image.setIntColor(Math.floor(s.x+mouse_down_x), Math.floor(s.y+mouse_down_y), 0xFFFF0000);
+            image.setIntColor(Math.floor(s.x+box_position.x1), Math.floor(s.y+box_position.y1), 0xFFFF0000);
             if (s.x < x.min) {
                 x.min = s.x
             }
@@ -321,7 +366,7 @@ async function process(){
             }
         });
         if(edgeList.length > 200)
-            edgeList = calculateOutliers(edgeList);
+            if(enableRemover.checked) edgeList = calculateOutliers(edgeList);
 
         for (let i = 0; i < edgeList.length; i++) {
             let pointMax = 0;
@@ -336,15 +381,15 @@ async function process(){
             if (max < pointMax) {
                 max = pointMax;
                 if(max*scaledValue > 2) snailMeasuredPoints[current] = {
-                    "x1": edgeList[i].x + mouse_down_x,
-                    "y1": edgeList[i].y + mouse_down_y,
-                    "x2": edgeList[jmax].x + mouse_down_x,
-                    "y2": edgeList[jmax].y + mouse_down_y,
+                    "x1": edgeList[i].x + box_position.x1,
+                    "y1": edgeList[i].y + box_position.y1,
+                    "x2": edgeList[jmax].x + box_position.x1,
+                    "y2": edgeList[jmax].y + box_position.y1,
                     "max": max * scaledValue,
-                    "minx": x.min + mouse_down_x,
-                    "maxx": x.max + mouse_down_x,
-                    "miny": y.min + mouse_down_y,
-                    "maxy": y.max + mouse_down_y,
+                    "minx": x.min + box_position.x1,
+                    "maxx": x.max + box_position.x1,
+                    "miny": y.min + box_position.y1,
+                    "maxy": y.max + box_position.y1,
                     "species": species,
                     "toBeDeleted": false
                 };
@@ -464,11 +509,17 @@ function drawLine( x1,  y1,  x2,  y2, size, color, image) {
     }
     if(x2==x1){
         for(let i = y1; i < y2; i++){
-            image.setIntColor(x1 , i, color);
+            for(let j = 0; j < size; j++) {
+                image.setIntColor(x1+j , i, color);
+                image.setIntColor(x1-j , i, color);
+            }
         }
     }else if(y2==y1){
         for(let i = x1; i < x2; i++){
-            image.setIntColor(i, y1, color);
+            for(let j = 0; j < size; j++) {
+                image.setIntColor(i, y1+j, color);
+                image.setIntColor(i, y1-j, color);
+            }
         }
     }else if(x2 - x1 > y2 - y1){
         let slope =  (y2 - y1) / (x2 - x1);
@@ -516,8 +567,8 @@ function calculateOutliers(set){
     console.log(set)
     let colorSet = [];
     set.forEach((p) => {
-        let val =  (working_image.getIntComponent0(Math.floor(p.x+mouse_down_x),Math.floor(p.y+mouse_down_y))*1.5+working_image.getIntComponent2(Math.floor(p.x+mouse_down_x),Math.floor(p.y+mouse_down_y))-working_image.getIntComponent1(Math.floor(p.x+mouse_down_x),Math.floor(p.y+mouse_down_y)));
-        let color = {"red":val, "x": p.x+mouse_down_x, "y":p.y+mouse_down_y, "assigned":p.assigned};
+        let val =  (working_image.getIntComponent0(Math.floor(p.x+box_position.x1),Math.floor(p.y+box_position.y1))*1.5+working_image.getIntComponent2(Math.floor(p.x+box_position.x1),Math.floor(p.y+box_position.y1))-working_image.getIntComponent1(Math.floor(p.x+box_position.x1),Math.floor(p.y+box_position.y1)));
+        let color = {"red":val, "x": p.x+box_position.x1, "y":p.y+box_position.y1, "assigned":p.assigned};
         colorSet.push(color);
     });
     colorSet.sort((a,b) => a.red-b.red);
@@ -532,11 +583,14 @@ function calculateOutliers(set){
             image.setIntColor(Math.floor(p.x),Math.floor(p.y),0xFF00FF00);
         }else{
             output.push({
-                "x": p.x-mouse_down_x,
-                "y": p.y-mouse_down_y,
+                "x": p.x-box_position.x1,
+                "y": p.y-box_position.y1,
                 "assigned": p.assigned
             });
         }
     });
     return output;
+}
+function magnitude(x,y){
+    return Math.sqrt(Math.pow(x,2) + Math.pow(y,2));
 }
