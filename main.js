@@ -307,7 +307,24 @@ const draw = () => {
 
 function isValidSelection(){
     if(Math.abs(magnitude(mouse_down_x,mouse_down_y)-magnitude(mouse_up_x,mouse_down_y)) > 10) return mouse_down_x +box_width > 0 && mouse_down_y + box_height > 0 && box_height + mouse_down_y < canvas_height && box_width + mouse_down_x < canvas_width;
-    else return false;
+    else {
+        let m = {
+            minx: mouse_down_x,
+            miny: mouse_down_y,
+            maxx: mouse_up_x,
+            maxy: mouse_up_y
+        }
+        snailMeasuredPoints.forEach((s) => {
+            if(DoBoxesIntersect(s,m)){
+                if(selectedSnail != -1 && selectedSnail != null){
+                    snailRowMap.get(selectedSnail).style.background = "lightgrey";
+                }
+                selectedSnail = s;
+                snailRowMap.get(selectedSnail).style.background = "grey";
+                draw();
+            }
+        });
+    }
 }
 function crop(){
         if (box_height < 0 && box_width < 0) {
@@ -446,7 +463,12 @@ function parseSnail(x){
     newRow.snail=snailMeasuredPoints[snailMeasuredPoints.length-1];
     snailRowMap.set(newRow.snail, newRow);
     newRow.addEventListener("click", () => {
+        if(selectedSnail != -1 && selectedSnail != null){
+            console.log(snailRowMap, selectedSnail)
+            snailRowMap.get(selectedSnail).style.background = "lightgrey";
+        }
         selectedSnail=newRow.snail;
+        newRow.style.background = "grey";
         draw();
     });
     //panzoom.getOptions().exclude.add(newRow);
@@ -472,6 +494,7 @@ function parseSnail(x){
         e.stopImmediatePropagation();
     })
     newCell.appendChild(newButton);
+    newRow.style.background="lightgrey"
 }
 
 function removeSnail(s) {
