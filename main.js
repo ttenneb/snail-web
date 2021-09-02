@@ -342,12 +342,14 @@ function crop(){
 }
 async function process(){
     Marvin.prewitt(selection.clone(), selection);
-    //image = selection;
+    // image = selection;
     let edges = [];
     let edgeMap = new Map()
     for(let i = 0; i < selection.getWidth(); i++){
         for(let j = 0; j < selection.getHeight(); j++){
-            if(selection.getIntComponent0(i,j) > 80 && selection.getIntComponent2(i,j) > 230){
+            let t = 60;
+            if(species == "Melanoides" || species == "Physa") t = 25;
+            if(selection.getIntComponent0(i,j) > t && selection.getIntComponent2(i,j) > 230){
                 edgeMap.set(i+j*image.getWidth(), edges.length);
                 edges.push({x:i,y:j, assigned: -1});
             }
@@ -616,4 +618,34 @@ function calculateOutliers(set){
 }
 function magnitude(x,y){
     return Math.sqrt(Math.pow(x,2) + Math.pow(y,2));
+}
+
+function findLinePoints(image){
+    let list = [];
+    for (let i = 0; i < image.getWidth(); i++) {
+        for (let j = 0; j < image.getHeight(); j++) {
+            if (compareColor(70, 70, 70, image, i, j) == 1) {
+                let pointSD = 0;
+                let mean = (image.getIntComponent0(i,j)+image.getIntComponent1(i,j)+image.getIntComponent2(i,j))/3;
+                pointSD += Math.abs(image.getIntComponent0(i,j)-mean);
+                pointSD += Math.abs(image.getIntComponent1(i,j)-mean);
+                pointSD += Math.abs(image.getIntComponent2(i,j)-mean);
+                pointSD /= 3;
+                if(pointSD < 15){
+                    list.push({x: i, y:j});
+                }
+            } 
+        }
+    }
+}
+function houghTransform(points){
+    let span = 30;
+    let table;
+    points.forEach((p) => {
+        let r = p.y;
+        for(let o = span*-1; o < span; o++){
+            
+        }
+        
+    });
 }
