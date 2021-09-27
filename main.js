@@ -11,6 +11,12 @@ const tbodyRef = table.getElementsByTagName('tbody')[0];
 
 let snailRowMap = new Map();
 
+let cropBounds = {
+    x1: 0,
+    x2: 0,
+    y1: 0,
+    y2: 0
+}
 
 let image = new MarvinImage();
 let image_original;
@@ -48,6 +54,8 @@ let canvas_height = canvas.clientHeight;
 // canvas.clientHeight = 720;
 
 var scaleValue = document.getElementById("scale");
+let threshold_e = document.getElementById("thresholde");
+let threshold_m = document.getElementById("thresholdm");
 let selectedSnail = -1;
 let species = "Not Specified"
 let showProcessed = false;
@@ -65,7 +73,7 @@ const panzoom = Panzoom(canvas, {
 const panzoomMenu = Panzoom(menu, {
     maxScale: 1,
     disableZoom: true,
-    exclude: [scaleValue]
+    exclude: [scaleValue, threshold_e, threshold_m]
 })
 const panzoomTable = Panzoom(snailTable, {
     maxScale: 1,
@@ -73,7 +81,8 @@ const panzoomTable = Panzoom(snailTable, {
     exclude: []
 })
 canvas.style.cursor = "crosshair";
-
+document.getElementById("valuee").innerHTML=threshold_e.value;
+document.getElementById("valuem").innerHTML=threshold_m.value;
 
 
 // GUHGUGHGHGHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHh
@@ -170,6 +179,50 @@ function upload() {
 
     });
 }
+document.getElementById("thresholde").addEventListener("input", ()=>{
+    document.getElementById("valuee").innerHTML=threshold_e.value;
+    snailSearchRange=threshold_e.value;
+});
+document.getElementById("thresholdm").addEventListener("input", ()=>{
+    document.getElementById("valuem").innerHTML=threshold_m.value;
+});
+document.getElementById("thresholdm").addEventListener("change", reselect);
+document.getElementById("thresholde").addEventListener("change", reselect);
+function reselect(){
+    let toremove = [];
+    snailMeasuredPoints.forEach((s)=> {
+        console.log(s);
+        if(s.x1 > cropBounds.x1 && s.x1 < cropBounds.x1+cropBounds.x2 &&
+        s.y1 > cropBounds.y1 && s.y1 < cropBounds.y1+cropBounds.y2){
+            toremove.push(s);
+        }else if(s.x2 > cropBounds.x1 && s.x2 < cropBounds.x1+cropBounds.x2 &&
+            s.y2 > cropBounds.y1 && s.y2 < cropBounds.y1+cropBounds.y2){
+                toremove.push(s);
+        }
+    });
+    toremove.forEach((s) => {
+        console.log("guj");
+        removeSnail(s);
+    });
+
+    if (cropBounds.y2 < 0 && cropBounds.x2 < 0) {
+        //TODO do scale before floor
+        console.log("guh1")
+        Marvin.crop(image_original, selection,Math.floor(cropBounds.x1) + Math.floor(cropBounds.x2), Math.floor(cropBounds.x1) + Math.floor(cropBounds.y2), -1 * Math.floor(cropBounds.x2), -1 * Math.floor(box_height));
+    } else if (cropBounds.y2 < 0) {
+        console.log("guh2")
+        Marvin.crop(image_original, selection,Math.floor(cropBounds.x1), Math.floor(cropBounds.x1) + Math.floor(cropBounds.y2), Math.floor(cropBounds.x2), -1* Math.floor(cropBounds.y2));
+    } else if (cropBounds.x2 < 0) {
+        console.log("guh3")
+        Marvin.crop(image_original, selection,Math.floor(cropBounds.x1) + Math.floor(cropBounds.x2), Math.floor(cropBounds.x1), -1 * Math.floor(cropBounds.x2), Math.floor(cropBounds.y2));
+    } else {
+        console.log("guh4")
+        Marvin.crop(image_original, selection,Math.floor(cropBounds.x1), Math.floor(cropBounds.y1), Math.floor(cropBounds.x2), Math.floor(cropBounds.y2));
+    }
+    crop();
+    draw();
+}
+
 document.getElementById("myFile").click();
 function pen(){
     drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFF0000FF, image);
@@ -191,8 +244,15 @@ function erase(){
     
 }
 function select(){
-    if(isValidSelection())
+
+    if(isValidSelection()){
+        cropBounds.x1=mouse_down_x;
+        cropBounds.x2=box_width;
+        cropBounds.y1=mouse_down_y;
+        cropBounds.y2=box_height;
         crop();
+    }
+        
 }
 function scale(){
     scaledVectors[0].x = mouse_down_x;
@@ -224,6 +284,8 @@ canvas.parentElement.addEventListener("mouseup", (event) => {
 
     box_position.x1 = Math.min(mouse_down_x, mouse_up_x);
     box_position.y1 = Math.min(mouse_down_y, mouse_up_y);
+
+
     if(inCanvas) currentTool();
 
 });
@@ -298,11 +360,12 @@ const draw = () => {
 
             imageclone.drawRect(Math.floor(s.minx),Math.floor(s.miny),Math.floor(s.maxx-s.minx),Math.floor(s.maxy-s.miny), 0xFF00FF00);
         }
+        imageclone.drawRect(Math.floor(cropBounds.x1),Math.floor(cropBounds.y1),Math.floor(cropBounds.x2),Math.floor(cropBounds.y2), 0xFF00FF00);
         imageclone.draw(canvas);
         snailMeasuredPoints.forEach((p) => {
             ctx.fillText(p.max.toFixed(2), Math.floor(p.x1)-10, Math.floor(p.y1)-10);
         });
-    }
+    } 
 };
 
 function isValidSelection(){
@@ -327,6 +390,7 @@ function isValidSelection(){
     }
 }
 function crop(){
+    console.log(cropBounds);
         if (box_height < 0 && box_width < 0) {
             //TODO do scale before floor
             Marvin.crop(image_original, selection,Math.floor(mouse_down_x) + Math.floor(box_width), Math.floor(mouse_down_y) + Math.floor(box_height), -1 * Math.floor(box_width), -1 * Math.floor(box_height));
@@ -399,7 +463,7 @@ async function process(){
             }
             if (max < pointMax) {
                 max = pointMax;
-                if(max*scaledValue > 2) snailMeasuredPoints[current] = {
+                if(max*scaledValue > threshold_m.value) snailMeasuredPoints[current] = {
                     "x1": edgeList[i].x + box_position.x1,
                     "y1": edgeList[i].y + box_position.y1,
                     "x2": edgeList[jmax].x + box_position.x1,
@@ -416,7 +480,7 @@ async function process(){
             }
         }
 
-        if(max * scaledValue > 2) {
+        if(max*scaledValue > threshold_m.value) {
             parseSnail(max * scaledValue);
         }
     });

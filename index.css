@@ -29,8 +29,8 @@ label {
     z-index: 100;
     background: aliceblue;
     display: inline-block;
-    height: 160px;
-    width: 360px;
+    height: 260px;
+    width: 320px;
     position: absolute;
     overflow: auto;
 }
