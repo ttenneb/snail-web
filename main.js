@@ -191,7 +191,6 @@ document.getElementById("thresholde").addEventListener("change", reselect);
 function reselect(){
     let toremove = [];
     snailMeasuredPoints.forEach((s)=> {
-        console.log(s);
         if(s.x1 > cropBounds.x1 && s.x1 < cropBounds.x1+cropBounds.x2 &&
         s.y1 > cropBounds.y1 && s.y1 < cropBounds.y1+cropBounds.y2){
             toremove.push(s);
@@ -201,7 +200,6 @@ function reselect(){
         }
     });
     toremove.forEach((s) => {
-        console.log("guj");
         removeSnail(s);
     });
 
@@ -225,9 +223,9 @@ function reselect(){
 
 document.getElementById("myFile").click();
 function pen(){
-    drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFF0000FF, image);
-    drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFF0000FF, image_original)
-    drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFF0000FF, working_image)
+    drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFFFFFFFF, image);
+    drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFFFFFFFF, image_original)
+    drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFFFFFFFF, working_image)
     // image.fillRect(Math.floor(point.x-4), Math.floor(point.y-4), 8,8, 0xFF0000FF);
     // image_original.fillRect(Math.floor(point.x-4), Math.floor(point.y-4), 8,8, 0xFF0000FF);
     // working_image.fillRect(Math.floor(point.x-4), Math.floor(point.y-4), 8,8, 0xFF0000FF);
@@ -360,7 +358,9 @@ const draw = () => {
 
             imageclone.drawRect(Math.floor(s.minx),Math.floor(s.miny),Math.floor(s.maxx-s.minx),Math.floor(s.maxy-s.miny), 0xFF00FF00);
         }
+        if(currentTool == select){
         imageclone.drawRect(Math.floor(cropBounds.x1),Math.floor(cropBounds.y1),Math.floor(cropBounds.x2),Math.floor(cropBounds.y2), 0xFF00FF00);
+        }
         imageclone.draw(canvas);
         snailMeasuredPoints.forEach((p) => {
             ctx.fillText(p.max.toFixed(2), Math.floor(p.x1)-10, Math.floor(p.y1)-10);
@@ -390,6 +390,14 @@ function isValidSelection(){
     }
 }
 function crop(){
+    if(cropBounds.x2 < 0){
+        cropBounds.x1 += cropBounds.x2;
+        cropBounds.x2 *= -1;
+    }
+    if(cropBounds.y2 < 0){
+        cropBounds.y1 += cropBounds.y2;
+        cropBounds.y2 *= -1;
+    }
     console.log(cropBounds);
         if (box_height < 0 && box_width < 0) {
             //TODO do scale before floor
