@@ -223,7 +223,7 @@ function reselect(){
 
 document.getElementById("myFile").click();
 function pen(){
-    drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFFFFFFFF, image);
+    drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFF0000FF, image);
     drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFFFFFFFF, image_original)
     drawLine(Math.floor(penStack.x),Math.floor(penStack.y), Math.floor(mouse_x), Math.floor(mouse_y), 4, 0xFFFFFFFF, working_image)
     // image.fillRect(Math.floor(point.x-4), Math.floor(point.y-4), 8,8, 0xFF0000FF);
